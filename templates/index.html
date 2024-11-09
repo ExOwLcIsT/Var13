@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Manager</title>
+    <link rel="stylesheet" href="../static/styles.css">
+</head>
+
+<body>
+    <header>
+        <h1>Database Management Interface</h1>
+    </header>
+
+    <main>
+
+        <section id="collections">
+            <h2>Collections</h2>
+            <button onclick="fetchCollections()">Load Collections</button>
+            <ul id="collection-list"></ul>
+        </section>
+        
+        <section id="create-collection">
+            <h3>Create a New Collection</h3>
+            <input type="text" id="new-collection-name" placeholder="Enter collection name" />
+            <button onclick="createCollection()">Add Collection</button>
+        </section>
+
+        <!-- Add Document Section -->
+        <section id="add-document">
+            <h2>Add Document</h2>
+            <form id="add-document-form">
+                <input type="text" id="collection-name" placeholder="Collection Name" required>
+                <textarea id="document-data" placeholder="Document Data (JSON format)" required></textarea>
+                <button type="submit">Add Document</button>
+            </form>
+        </section>
+
+        <!-- Collection Details Section for Document Cards -->
+        <section id="collection-details">
+            <h2>Documents</h2>
+            <div id="document-cards" class="card-container"></div>
+        </section>
+    </main>
+
+    <script src="../static/script.js"></script>
+</body>
+
+</html>
