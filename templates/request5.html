@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <h1>Одержати інформацію про вантажообіг протягом вказаного періоду: кількість
+        місць, вага зданого вантажу, кількість літаків, клас літаків.</h1>
+    <label for="start">Початкова дата</label>
+    <input type="date" id="start">
+    <label for="end">Кінцева дата</label>
+    <input type="date" id="end">
+    <button onclick="make_request()">Обчислити</button>
+    <div id="result"></div>
+    <script>
+        function make_request() {
+            start = document.getElementById("start").value;
+            end = document.getElementById("end").value;
+            fetch("/api/request5", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    start: start,
+                    end: end
+                })
+            }).then(response => response.json()).then(data => {
+                const result = document.getElementById("result");
+                result.innerHTML = '';
+                Object.keys(data).forEach(key => {
+                    const h = document.createElement("h1");
+                    h.innerText = key + ": " + data[key];
+                    result.appendChild(h);
+                })
+            });
+        }
+    </script>
+</body>
+
+</html>

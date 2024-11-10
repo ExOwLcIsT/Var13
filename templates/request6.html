@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <h1>Одержати інформацію про кокретного туриста: скільки разів був у вказаній країні,
+        дати прильоту та відльоту, у яких готелях зупинявся, які екскурсії та у яких
+        агентствах замовляв, який вантаж здавав.</h1>
+    <label for="tourist">_id шуканого туриста</label>
+    <input type="text" id="tourist">
+    <label for="country">Країна відвідування</label>
+    <input type="text" id="country">
+    <button onclick="make_request()">Обчислити</button>
+    <div id="result"></div>
+    <script>
+        function make_request() {
+            tourist = document.getElementById("tourist").value;
+            country = document.getElementById("country").value;
+            fetch("/api/request6", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    country: country,
+                    tourist_id: tourist
+                })
+            }).then(response => response.json()).then(data => {
+                const result = document.getElementById("result");
+                result.innerHTML = '';
+                Object.keys(data).forEach(key => {
+                    const h = document.createElement("h1");
+                    h.innerText = key + ": " + data[key];
+                    result.appendChild(h);
+                })
+            });
+        }
+    </script>
+</body>
+
+</html>

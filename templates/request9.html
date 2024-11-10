@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <h1>Одержати список туристів для митниці загалом та окремо за вказаними
+        категоріями.</h1>
+    <button onclick="make_request()">Обчислити</button>
+    <div id="result"></div>
+    <script>
+        function make_request() {
+            fetch("/api/request9").then(response => response.json()).then(data => {
+                const result = document.getElementById("result");
+                result.innerHTML = '';
+                Object.keys(data).forEach(key => {
+                    const h = document.createElement("h2");
+                    h.innerText = key + ": ";
+                    result.appendChild(h);
+                    data[key].forEach(elem => {
+                        const p = document.createElement("p");
+                        p.innerText = JSON.stringify(elem);
+                        result.appendChild(p);
+                    })
+
+                })
+            });
+        }
+    </script>
+</body>
+
+</html>

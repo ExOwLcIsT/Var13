@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <h1>Одержати повний фінансовий звіт для вказаної групи туристів загалом та окремо
+        для вказаної категорії туристів.</h1>
+    <label for="group">_id групи</label>
+    <input type="text" id="group">
+    <label for="type"></label>
+    <select id="type">
+        <option value="вантаж">вантаж</option>
+        <option value="відпочинок">відпочинок</option>
+    </select>
+    <button onclick="make_request()">Обчислити</button>
+    <div id="result"></div>
+    <script>
+        function make_request() {
+            group = document.getElementById("group").value;
+            type = document.getElementById("type").value;
+            fetch("/api/request7", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    group_id: group,
+                    type: type
+                })
+            }).then(response => response.json()).then(data => {
+                const result = document.getElementById("result");
+                result.innerHTML = '';
+                Object.keys(data).forEach(key => {
+                    const h = document.createElement("h2");
+                    h.innerText = key + ": " + JSON.stringify(data[key]);
+                    result.appendChild(h);
+                })
+            });
+        }
+    </script>
+</body>
+
+</html>

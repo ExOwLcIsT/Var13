@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <h1>Одержати список туристів, які побували у вказаній країні протягом вказаного
+        періоду часу загалом та вказаної категорії.</h1>
+    <label for="country">Країна відвідування</label>
+    <input type="text" id="country">
+    <label for="start">Початкова дата</label>
+    <input type="date" id="start">
+    <label for="end">Кінцева дата</label>
+    <input type="date" id="end">
+    <button onclick="make_request()">Обчислити</button>
+    <div id="result"></div>
+    <script>
+        function make_request() {
+            start = document.getElementById("start").value;
+            end = document.getElementById("end").value;
+            country = document.getElementById("country").value;
+            console.log(start)
+            console.log(end)
+            console.log(country)
+            fetch("/api/request10", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    country: country,
+                    start: start,
+                    end: end
+                })
+            }).then(response => response.json()).then(data => {
+                const result = document.getElementById("result");
+                result.innerHTML = '';
+                Object.keys(data).forEach(key => {
+                    const h = document.createElement("h2");
+                    h.innerText = key + ": ";
+                    result.appendChild(h);
+                    data[key].forEach(elem => {
+                        const p = document.createElement("p");
+                        p.innerText = JSON.stringify(elem);
+                        result.appendChild(p);
+                    })
+
+                })
+            });
+        }
+    </script>
+</body>
+
+</html>
