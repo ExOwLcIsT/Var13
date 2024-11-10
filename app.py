@@ -214,16 +214,12 @@ def update_document_field(collection_name, document_id, field_name):
 
 @ app.route('/', methods=['GET'])
 def get_index_page():
-    return render_template(
-        "index.html"
-    )
+    return render_template("index.html")
 
 
 @ app.route('/authorization', methods=['GET'])
 def get_authorize_page():
-    return render_template(
-        "authorize.html"
-    )
+    return render_template("authorize.html")
 
 
 @app.route('/api/authorization/login', methods=['POST'])
@@ -262,6 +258,82 @@ def register_user():
         {"username": username, "password": password, "role": role})
 
     return jsonify({"success": True, "message": "User registered successfully"}), 201
+
+
+@app.route("/request1", methods=["GET"])
+def get_request1():
+    return render_template("request1.html")
+
+
+@app.route("/api/request1", methods=["GET"])
+def get_request1_data():
+    profits = 0
+    costs = 0
+
+    groups = list(db["групи"].find({}))
+    for group in groups:
+        flight = db["рейси"].find_one({"_id": group["рейс"]})
+        tourists = db["туристи"].find({})
+        tourists = list(
+            tourist for tourist in tourists if tourist["_id"] in group["туристи"])
+        costs += sum(tourist["страхові_виплати"] for tourist in tourists)
+        plane = db["літаки"].find_one({"_id": flight["літак"]})
+        costs += plane["вартість_обслуговування"]
+
+        excursions = list(db["екскурсії"].find({}))
+        excursions = list(
+            excursion for excursion in excursions if excursion["_id"] in group["екскурсії"])
+        costs += sum(excursion["вартість_бронювання"]
+                     for excursion in excursions) * tourists.__len__()
+        profits += flight["вартість"] * \
+            (sum(tourist["діти"] for tourist in tourists) + 1)
+        profits += sum(tourist["вартість_упакування"] for tourist in tourists)
+    return jsonify({"витрати": costs, "доходи": profits, "рентабельність": profits/costs})
+
+
+@app.route("/request2", methods=["GET"])
+def get_request2():
+    return render_template("request2.html")
+
+
+@app.route("/request3", methods=["GET"])
+def get_request3():
+    return render_template("request3.html")
+
+
+@app.route("/request4", methods=["GET"])
+def get_request4():
+    return render_template("request4.html")
+
+
+@app.route("/request5", methods=["GET"])
+def get_request5():
+    return render_template("request5.html")
+
+
+@app.route("/request6", methods=["GET"])
+def get_request6():
+    return render_template("request6.html")
+
+
+@app.route("/request7", methods=["GET"])
+def get_request7():
+    return render_template("request7.html")
+
+
+@app.route("/request8", methods=["GET"])
+def get_request8():
+    return render_template("request8.html")
+
+
+@app.route("/request9", methods=["GET"])
+def get_request9():
+    return render_template("request9.html")
+
+
+@app.route("/request10", methods=["GET"])
+def get_request10():
+    return render_template("request10.html")
 
 
 if __name__ == '__main__':

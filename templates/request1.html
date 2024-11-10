@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <h1>Обчислити рентабельність представництва (співвідношення доходів та витрат).</h1>
+    <button onclick="make_request()">Обчислити</button>
+    <div id="result"></div>
+    <script>
+        function make_request() {
+            fetch("/api/request1").then(response => response.json()).then(data => {
+                const h1 = document.createElement("h1");
+                const h2 = document.createElement("h1");
+                const h3 = document.createElement("h1");
+                h1.innerText = "Доходи: " + data["доходи"];
+                h2.innerText = "Витрати: " + data["витрати"];
+                h3.innerText = "Рентабельність: " + data["рентабельність"];
+                const result = document.getElementById("result");
+                result.appendChild(h1);
+                result.appendChild(h2);
+                result.appendChild(h3);
+            });
+        }
+    </script>
+</body>
+
+</html>
