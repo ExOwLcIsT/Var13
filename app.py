@@ -29,8 +29,7 @@ def get_collection(name):
         for key in doc.keys():
             if (key != "fields"):
                 doc["fields"].update({key: str(type(doc[key]).__name__)})
-                if str(type(doc[key]).__name__) == "ObjectId":
-                    doc[key] = str(doc[key])
+                doc[key] = str(doc[key])
     response = {
         "collection_name": name,
         "documents": documents
@@ -296,14 +295,95 @@ def get_request2():
     return render_template("request2.html")
 
 
+@app.route("/api/request2", methods=["POST"])
+def get_request2_data():
+    costs = 0
+    plane_costs = 0
+    excursion_costs = 0
+    insurance_costs = 0
+    start = request.json.get("start")
+    end = request.json.get("end")
+    start = datetime.fromisoformat(start)
+    end = datetime.fromisoformat(end)
+    groups = list(db["групи"].find({}))
+    groups = list(group for group in groups if (
+        start < group["дата_повернення"] and end > group["дата_відправлення"]))
+    for group in groups:
+        flight = db["рейси"].find_one({"_id": group["рейс"]})
+        tourists = db["туристи"].find({})
+        tourists = list(
+            tourist for tourist in tourists if tourist["_id"] in group["туристи"])
+        insurance_costs += sum(tourist["страхові_виплати"]
+                               for tourist in tourists)
+        costs += sum(tourist["страхові_виплати"] for tourist in tourists)
+        plane = db["літаки"].find_one({"_id": flight["літак"]})
+        plane_costs += plane["вартість_обслуговування"]
+        costs += plane["вартість_обслуговування"]
+
+        excursions = list(db["екскурсії"].find({}))
+        excursions = list(
+            excursion for excursion in excursions if excursion["_id"] in group["екскурсії"])
+
+        excursion_costs += sum(excursion["вартість_бронювання"]
+                               for excursion in excursions) * tourists.__len__()
+        costs += sum(excursion["вартість_бронювання"]
+                     for excursion in excursions) * tourists.__len__()
+
+    return jsonify({"загальні витрати": costs, "витрати на літаки": plane_costs, "витрати на страховку": insurance_costs, "витрати на екскурсії:": excursion_costs})
+
+
 @app.route("/request3", methods=["GET"])
 def get_request3():
     return render_template("request3.html")
 
 
+@app.route("/api/request3", methods=["POST"])
+def get_request3_data():
+    baggage = 0
+    occupied_seats = 0
+    date = request.json.get("date")
+    date = datetime.fromisoformat(date)
+    print(date)
+    groups = list(db["групи"].find({}))
+    print(groups)
+    groups = list(group for group in groups if (
+        date == group["дата_повернення"] or date == group["дата_відправлення"]))
+    if (groups.__len__() == 0):
+        return jsonify({"message": "рейсів не знайдено"}), 404
+    for group in groups:
+        tourists = db["туристи"].find({})
+        tourists = list(
+            tourist for tourist in tourists if tourist["_id"] in group["туристи"])
+        baggage = (sum(tourist["вага_вантажу"] for tourist in tourists))
+        occupied_seats = (sum(tourist["діти"] for tourist in tourists) + 1)
+    return jsonify({"зайнятих_місць": occupied_seats, "вага_вантажу": baggage}), 200
+
+
 @app.route("/request4", methods=["GET"])
 def get_request4():
     return render_template("request4.html")
+
+
+@app.route("/api/request4", methods=["POST"])
+def get_request4_data():
+    start = request.json.get("start")
+    end = request.json.get("end")
+    start = datetime.fromisoformat(start)
+    end = datetime.fromisoformat(end)
+    top_exc = {}
+    total_trsts = set()
+    groups = list(db["групи"].find({}))
+    groups = list(group for group in groups if (
+        start < group["дата_повернення"] and end > group["дата_відправлення"]))
+    for group in groups:
+        tourists = db["туристи"].find({})
+        tourists = list(tourist for tourist in tourists if (
+            tourist["_id"] in group["туристи"] and tourist["тип_туриста"] == "відпочинок"))
+        total_trsts.update(list(tourist["ПІБ"] for tourist in tourists))
+        for exc in group["екскурсії"]:
+            top_exc.update({exc: tourists.__len__()})
+    top1_exc = db["екскурсії"].find_one({"_id" : max(top_exc, key=top_exc.get)}, {"_id" : 0})
+    return jsonify({"кількість туристів ": total_trsts.__len__(), "найпопулярніша екскурсія":  str(top1_exc)}), 200
 
 
 @app.route("/request5", methods=["GET"])

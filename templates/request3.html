@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <h1>Одержати дані про завантаження вказаного рейсу на вказану дату: кількість місць
+        загалом, кількість вільних місць, вага вантажу.</h1>
+    <label for="date">Дата рейсу</label>
+    <input type="date" id="date">
+    <button onclick="make_request()">Обчислити</button>
+    <div id="result"></div>
+    <script>
+        function make_request() {
+            date = document.getElementById("date").value;
+            fetch("/api/request3", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    date: date
+                })
+            }).then(response => response.json()).then(data => {
+                const result = document.getElementById("result");
+                result.innerHTML = '';
+                Object.keys(data).forEach(key => {
+                    const h = document.createElement("h1");
+                    h.innerText = key + ": " + data[key];
+                    result.appendChild(h);
+                })
+            });
+        }
+    </script>
+</body>
+
+</html>
