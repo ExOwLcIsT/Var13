@@ -5,12 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Database Manager</title>
-    <link rel="stylesheet" href="../static/styles.css">
+    <link rel="stylesheet" href="../static/styles/styles.css">
 </head>
 
 <body>
     <header>
         <h1>Database Management Interface</h1>
+        <button onclick="window.location.href='/authorization';">Go to Authorization</button>
     </header>
 
     <main>
@@ -20,15 +21,14 @@
             <button onclick="fetchCollections()">Load Collections</button>
             <ul id="collection-list"></ul>
         </section>
-        
-        <section id="create-collection">
+
+        <section id="create-collection" class="owner-only">
             <h3>Create a New Collection</h3>
             <input type="text" id="new-collection-name" placeholder="Enter collection name" />
             <button onclick="createCollection()">Add Collection</button>
         </section>
 
-        <!-- Add Document Section -->
-        <section id="add-document">
+        <section id="add-document" class="operator-only">
             <h2>Add Document</h2>
             <form id="add-document-form">
                 <input type="text" id="collection-name" placeholder="Collection Name" required>
@@ -37,14 +37,13 @@
             </form>
         </section>
 
-        <!-- Collection Details Section for Document Cards -->
         <section id="collection-details">
             <h2>Documents</h2>
             <div id="document-cards" class="card-container"></div>
         </section>
     </main>
 
-    <script src="../static/script.js"></script>
+    <script src="../static/scripts/script.js"></script>
 </body>
 
 </html>

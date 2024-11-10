@@ -46,34 +46,77 @@ section {
     margin-top: 20px;
 }
 
+button {
+    padding: 10px 15px;
+    margin-top: 10px;
+    cursor: pointer;
+}
+
 .card-container {
     display: flex;
     flex-wrap: wrap;
     gap: 15px;
     justify-content: center;
+    padding: 20px;
 }
 
 .card {
-    background: #fff;
+    background-color: #fff;
     border: 1px solid #ddd;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     padding: 15px;
-    width: 300px;
-    overflow-wrap: break-word;
+    width: 100%;
+    max-width: 300px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
 }
 
 .card h3 {
     font-size: 1.2em;
     margin: 0 0 10px;
+    color: #333;
 }
 
 .card p {
     margin: 5px 0;
+    color: #555;
+    line-height: 1.5;
 }
 
-button {
-    padding: 10px 15px;
+.card .card-buttons {
     margin-top: 10px;
+    border-radius: 4px;
     cursor: pointer;
+    height: 30px;
+    transition: background-color 0.3s ease;
+}
+
+.card .card-buttons.edit-btn,
+.card .card-buttons.rename-btn {
+    background-color: #4CAF50;
+    color: #fff;
+}
+
+.card .card-buttons.edit-btn:hover .card .card-buttons.rename-btn:hover {
+    background-color: #45A049;
+}
+
+.card .card-buttons.remove-btn {
+    background-color: #f44336;
+    color: #fff;
+}
+
+.card .card-buttons.remove-btn:hover {
+    background-color: #e53935;
+}
+
+.owner-only,
+.admin-only,
+.operator-only {
+    display: none;
 }

@@ -1,10 +1,17 @@
 const apiUrl = 'http://127.0.0.1:5000/api';
 
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+
 async function fetchCollections() {
     const response = await fetch('/api/collections');
     const collections = await response.json();
     const collectionList = document.getElementById('collection-list');
-    collectionList.innerHTML = ''; // Clear list before rendering
+    collectionList.innerHTML = '';
 
     Object.keys(collections).forEach(name => {
         const li = document.createElement('li');
@@ -57,6 +64,7 @@ function fetchCollectionDetails(collectionName) {
     fetch(`${apiUrl}/collections/${collectionName}`)
         .then(response => response.json())
         .then(data => {
+            console.log(data)
             const documentCardsContainer = document.getElementById('document-cards');
             documentCardsContainer.innerHTML = '';
 
@@ -65,26 +73,31 @@ function fetchCollectionDetails(collectionName) {
                 card.classList.add('card');
                 card.innerHTML = `<h3>Document ID: ${doc._id}</h3>`;
 
-                for (const [key, value] of Object.entries(doc)) {
-                    const fieldDiv = document.createElement('div');
-                    if (key !== '_id') {
+                const deleteDocBtn = document.createElement('button');
+                deleteDocBtn.textContent = 'Delete Document';
+                deleteDocBtn.classList.add('delete-doc-btn', "card-buttons", 'operator-only');
+                deleteDocBtn.onclick = () => deleteDocument(collectionName, doc._id);
+                card.appendChild(deleteDocBtn);
 
+                for (const [key, value] of Object.entries(doc)) {
+                    if (key !== '_id' && key != "fields") {
+                        const fieldDiv = document.createElement('div');
                         fieldDiv.classList.add('field-container');
-                        fieldDiv.setAttribute('data-field-name', key); // Set unique data attribute
+                        fieldDiv.setAttribute('data-field-name', key);
 
                         const renameBtn = document.createElement('button');
                         renameBtn.textContent = 'Rename';
-                        renameBtn.classList.add('rename-btn');
+                        renameBtn.classList.add('rename-btn', "card-buttons", 'admin-only');
                         renameBtn.onclick = () => renameField(collectionName, doc._id, key);
 
                         const removeBtn = document.createElement('button');
                         removeBtn.textContent = 'Remove';
-                        removeBtn.classList.add('remove-btn');
+                        removeBtn.classList.add('remove-btn', "card-buttons", 'admin-only');
                         removeBtn.onclick = () => deleteField(collectionName, doc._id, key);
 
                         const editBtn = document.createElement('button');
                         editBtn.textContent = 'Edit';
-                        editBtn.classList.add('edit-btn');
+                        editBtn.classList.add('edit-btn', "card-buttons", 'operator-only');
                         editBtn.onclick = () => showEditFieldInput(collectionName, doc._id, key, value);
 
                         fieldDiv.appendChild(renameBtn);
@@ -92,58 +105,166 @@ function fetchCollectionDetails(collectionName) {
                         fieldDiv.appendChild(editBtn);
 
                         const fieldContent = document.createElement('p');
-                        fieldContent.innerHTML = `<strong>${key}:</strong> ${value} <span class="field-type">Type: ${typeof value}</span>`;
+                        fieldContent.innerHTML = `<strong>${key}:</strong> ${value} <span class="field-type">Type: ${doc["fields"][key]}</span>`;
                         fieldDiv.appendChild(fieldContent);
                         card.appendChild(fieldDiv);
                     }
                 }
+
+                const addFieldDiv = document.createElement('div');
+                addFieldDiv.classList.add('add-field-container');
+
+                const addFieldBtn = document.createElement('button');
+                addFieldBtn.textContent = 'Add Field';
+                addFieldBtn.classList.add('add-field-btn', "card-buttons", 'admin-only');
+                addFieldBtn.onclick = () => showAddFieldInput(addFieldDiv, collectionName, doc._id);
+                card.appendChild(addFieldBtn);
+
+                card.appendChild(addFieldDiv);
+
                 documentCardsContainer.appendChild(card);
             });
+            hideElementsBasedOnRole();
         })
         .catch(error => console.error('Error fetching collection details:', error));
 }
 
-function showEditFieldInput(collectionName, documentId, fieldName, currentValue) {
-    // Select the field container using data attribute
-    const fieldDiv = document.querySelector(`.field-container[data-field-name="${fieldName}"]`);
-    if (!fieldDiv) return; // Exit if the field container is not found
+function showAddFieldInput(container, collectionName, documentId) {
+    container.innerHTML = '';
 
-    // Create an input field with the initial type
+    const fieldNameInput = document.createElement('input');
+    fieldNameInput.placeholder = 'Field Name';
+    fieldNameInput.type = 'text';
+    container.appendChild(fieldNameInput);
+
+    const fieldTypeSelect = document.createElement('select');
+    ['text', 'int', 'float', 'boolean', 'date', 'ObjectId'].forEach(type => {
+        const option = document.createElement('option');
+        option.value = type;
+        option.textContent = type;
+        fieldTypeSelect.appendChild(option);
+    });
+    container.appendChild(fieldTypeSelect);
+
+    const fieldValueInput = document.createElement('input');
+    container.appendChild(fieldValueInput);
+
+    fieldTypeSelect.onchange = () => {
+        const selectedType = fieldTypeSelect.value;
+        if (selectedType === 'int') {
+            fieldValueInput.type = 'number';
+            fieldValueInput.step = '1';
+        } else if (selectedType === 'float') {
+            fieldValueInput.type = 'number';
+            fieldValueInput.step = '0.01';
+        } else if (selectedType === 'date') {
+            fieldValueInput.type = 'date';
+        } else if (selectedType === 'boolean') {
+            fieldValueInput.type = 'checkbox';
+        } else {
+            fieldValueInput.type = 'text';
+        }
+    };
+    fieldTypeSelect.onchange();
+
+    const submitBtn = document.createElement('button');
+    submitBtn.textContent = 'Add Field';
+    submitBtn.onclick = () => {
+        const fieldName = fieldNameInput.value;
+        const fieldType = fieldTypeSelect.value;
+        let fieldValue = fieldValueInput.value;
+
+        if (fieldType === 'int') {
+            fieldValue = parseInt(fieldValue, 10);
+        } else if (fieldType === 'float') {
+            fieldValue = parseFloat(fieldValue);
+        } else if (fieldType === 'boolean') {
+            fieldValue = fieldValueInput.checked;
+        } else if (fieldType === 'date') {
+            fieldValue = new Date(fieldValueInput.value);
+        }
+
+        addFieldToDocument(collectionName, documentId, fieldName, fieldValue, fieldType);
+    };
+    container.appendChild(submitBtn);
+}
+
+function addFieldToDocument(collectionName, documentId, fieldName, fieldValue, fieldType) {
+    fetch(`${apiUrl}/fields/add/${collectionName}/${documentId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                field_name: fieldName,
+                field_value: fieldValue,
+                field_type: fieldType
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Field added successfully!');
+                fetchCollectionDetails(collectionName);
+            } else {
+                alert(`Error adding field: ${data.error}`);
+            }
+        })
+        .catch(error => console.error('Error adding field:', error));
+}
+
+function deleteDocument(collectionName, documentId) {
+    fetch(`${apiUrl}/documents/${collectionName}/${documentId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Document deleted successfully!');
+                fetchCollectionDetails(collectionName);
+            } else {
+                alert(`Error deleting document: ${data.error}`);
+            }
+        })
+        .catch(error => console.error('Error deleting document:', error));
+}
+
+
+function showEditFieldInput(collectionName, documentId, fieldName, currentValue) {
+    const fieldDiv = document.querySelector(`.field-container[data-field-name="${fieldName}"]`);
+    if (!fieldDiv) return;
+
     const inputField = document.createElement('input');
     inputField.classList.add('edit-input');
 
-    // Handle different types for the input field
     if (typeof currentValue === 'string') {
         inputField.type = 'text';
         inputField.value = currentValue;
     } else if (typeof currentValue === 'number') {
-        // Check if it's an integer or float
         if (Number.isInteger(currentValue)) {
             inputField.type = 'number';
             inputField.value = currentValue;
         } else {
             inputField.type = 'number';
-            inputField.step = 'any';  // Allow decimals for float
+            inputField.step = 'any';
             inputField.value = currentValue;
         }
     } else if (Object.prototype.toString.call(currentValue) === '[object Date]') {
         inputField.type = 'date';
-        inputField.value = new Date(currentValue).toISOString().split('T')[0]; // Format as YYYY-MM-DD
+        inputField.value = new Date(currentValue).toISOString().split('T')[0];
     } else if (typeof currentValue === 'boolean') {
         inputField.type = 'checkbox';
         inputField.checked = currentValue;
     } else if (currentValue && currentValue.$oid) {
-        // Handle ObjectId (assuming it's an object with an $oid field)
         inputField.type = 'text';
-        inputField.value = currentValue.$oid; // This will display the ObjectId string value
+        inputField.value = currentValue.$oid;
     } else {
-        inputField.type = 'text'; // Default to text for other types
+        inputField.type = 'text';
         inputField.value = currentValue;
     }
 
-    // Create a dropdown for selecting the type
     const typeSelect = document.createElement('select');
-    const types = ['text', 'number (int)', 'number (float)', 'date', 'boolean', 'ObjectId'];
+    const types = ['text', 'int', 'float', 'date', 'boolean', 'ObjectId'];
     types.forEach(type => {
         const option = document.createElement('option');
         option.value = type;
@@ -154,39 +275,36 @@ function showEditFieldInput(collectionName, documentId, fieldName, currentValue)
         typeSelect.appendChild(option);
     });
 
-    // Update input field type when a new type is selected
     typeSelect.onchange = () => {
         const selectedType = typeSelect.value;
         if (selectedType === 'boolean') {
             inputField.type = 'checkbox';
-            inputField.checked = false; // Default value for checkbox
+            inputField.checked = false;
         } else if (selectedType === 'ObjectId') {
             inputField.type = 'text';
-            inputField.value = ''; // Empty for new ObjectId
-        } else if (selectedType === 'number (int)') {
+            inputField.value = '';
+        } else if (selectedType === 'int') {
             inputField.type = 'number';
-            inputField.step = ''; // Remove decimal step for integer
-            inputField.value = Math.floor(inputField.value); // Round to integer if needed
-        } else if (selectedType === 'number (float)') {
+            inputField.step = '';
+            inputField.value = Math.floor(inputField.value);
+        } else if (selectedType === 'float') {
             inputField.type = 'number';
-            inputField.step = 'any'; // Allow decimals for float
-            inputField.value = parseFloat(inputField.value); // Ensure it's float
+            inputField.step = 'any';
+            inputField.value = parseFloat(inputField.value);
         } else if (selectedType === 'date') {
             inputField.type = 'date';
-            inputField.value = currentValue ? new Date(currentValue).toISOString().split('T')[0] : ''; // Format as YYYY-MM-DD
+            inputField.value = currentValue ? new Date(currentValue).toISOString().split('T')[0] : '';
         } else {
             inputField.type = selectedType;
             inputField.value = currentValue;
         }
     };
 
-    // Create a save button
     const saveBtn = document.createElement('button');
     saveBtn.textContent = 'Save';
     saveBtn.classList.add('save-btn');
-    saveBtn.onclick = () => updateField(collectionName, documentId, fieldName, inputField.value, typeSelect.value);
+    saveBtn.onclick = () => updateField(collectionName, documentId, fieldName, inputField.type != "checkbox" ? inputField.value : inputField.checked, typeSelect.value);
 
-    // Clear the existing content and add the input field, type selector, and save button
     fieldDiv.innerHTML = `<strong>${fieldName}:</strong> `;
     fieldDiv.appendChild(inputField);
     fieldDiv.appendChild(typeSelect);
@@ -195,38 +313,41 @@ function showEditFieldInput(collectionName, documentId, fieldName, currentValue)
 
 function updateField(collectionName, documentId, fieldName, newValue, newType) {
     if (newType === 'boolean') {
-        newValue = Boolean(newValue); // Ensure boolean conversion
+        newValue = Boolean(newValue);
     } else if (newType === 'ObjectId') {
-        newValue = { $oid: newValue }; // Handle ObjectId format
-    } else if (newType === 'number (int)') {
-        newValue = parseInt(newValue); // Ensure the value is an integer
-    } else if (newType === 'number (float)') {
-        newValue = parseFloat(newValue); // Ensure the value is a float
+        newValue = {
+            $oid: newValue
+        };
+    } else if (newType === 'int') {
+        newValue = parseInt(newValue);
+    } else if (newType === 'float') {
+        newValue = parseFloat(newValue);
     } else if (newType === 'date') {
-        // Convert date string to Date object
-        newValue = new Date(newValue); // This ensures that it's a valid Date object
+        newValue = new Date(newValue);
     }
 
     fetch(`${apiUrl}/documents/${collectionName}/${fieldName}/${documentId}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ new_value: newValue, new_type: newType })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.message) {
-            alert(data.message);
-            fetchCollectionDetails(collectionName);  // Refresh the details
-        } else {
-            alert(data.error);
-        }
-    })
-    .catch(error => console.error('Error updating field:', error));
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                new_value: newValue,
+                new_type: newType
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                alert(data.message);
+                fetchCollectionDetails(collectionName);
+            } else {
+                alert(data.error);
+            }
+        })
+        .catch(error => console.error('Error updating field:', error));
 }
 
-// Function to rename a field
 async function renameField(collectionName, documentId, oldFieldName) {
     console.log(collectionName)
     console.log(documentId)
@@ -250,7 +371,6 @@ async function renameField(collectionName, documentId, oldFieldName) {
     }
 }
 
-// Function to delete a field
 async function deleteField(collectionName, documentId, fieldName) {
     const approve = confirm("ви дійнсо хочете видалити це поле з документа?");
     if (approve) {
@@ -292,3 +412,19 @@ document.getElementById('add-document-form').onsubmit = function (event) {
         .then(data => alert(data.message || 'Document added successfully!'))
         .catch(error => console.error('Error adding document:', error));
 };
+
+
+function hideElementsBasedOnRole() {
+    const roles = ['owner', 'admin', 'operator', "user"];
+    const index = roles.indexOf(getCookie("userRole"));
+    for (let i = index; i < roles.length; i++) {
+        console.log(i)
+        console.log(`.${roles[i]}-only`)
+        const elements = document.querySelectorAll(`.${roles[i]}-only`);
+        console.log(elements)
+        elements.forEach(element => {
+            element.style.display = 'block';
+        });
+    }
+}
+hideElementsBasedOnRole();

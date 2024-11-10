@@ -1,7 +1,6 @@
 from datetime import datetime
 from flask import Flask, jsonify, render_template, request, abort
 from bson.objectid import ObjectId
-from bson.datetime_ms import DatetimeMS
 from config import get_db
 
 app = Flask(__name__)
@@ -25,15 +24,15 @@ def get_collection(name):
         return jsonify({"error": "Колекцію не знайдено"}), 404
 
     documents = list(db[name].find({}))
-    fields = {}
     for doc in documents:
+        doc.update({"fields": {}})
         for key in doc.keys():
-            fields.update({key: str(type(doc[key]).__name__)})
-            if str(type(doc[key]).__name__) == "ObjectId":
-                doc[key] = str(doc[key])
+            if (key != "fields"):
+                doc["fields"].update({key: str(type(doc[key]).__name__)})
+                if str(type(doc[key]).__name__) == "ObjectId":
+                    doc[key] = str(doc[key])
     response = {
         "collection_name": name,
-        "fields": fields,
         "documents": documents
     }
 
@@ -59,20 +58,6 @@ def create_collection(name):
         return jsonify({'message': f'Колекція "{name}" успішно створена'}), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-
-@ app.route('/api/collections/document/<collection_name>/<document_id>', methods=['DELETE'])
-def delete_document(collection_name, document_id):
-    db[collection_name].delete_one({"_id": ObjectId(document_id)})
-    return jsonify({"message": "Документ успішно видалено"}), 200
-
-
-@ app.route('/api/collections/document/<collection_name>/<document_id>', methods=['PUT'])
-def update_document(collection_name, document_id):
-    updated_data = request.json
-    db[collection_name].update_one(
-        {"_id": ObjectId(document_id)}, {"$set": updated_data})
-    return jsonify({"message": "Документ успішно оновлено"}), 200
 
 
 @app.route('/api/fields/<collection_name>/<old_name>/<new_name>/<document_id>', methods=['PUT'])
@@ -105,6 +90,57 @@ def delete_field(collection_name, field_name, document_id):
     db[collection_name].update_one({"_id": ObjectId(document_id)}, {
                                    "$unset": {field_name: ""}})
     return jsonify({"message": "Поле успішно видалене"}), 200
+
+
+@app.route('/api/fields/<collection_name>/<document_id>', methods=['POST'])
+def add_field_to_document(collection_name, document_id):
+    try:
+        data = request.json
+        field_name = data.get("field_name")
+        field_value = data.get("field_value")
+        field_type = data.get("field_type")
+
+        # Convert field_value based on field_type
+        if field_type == "number (int)":
+            field_value = int(field_value)
+        elif field_type == "number (float)":
+            field_value = float(field_value)
+        elif field_type == "boolean":
+            field_value = bool(field_value)
+        elif field_type == "date":
+            # Assuming the date is in ISO format; adjust as necessary
+            from datetime import datetime
+            field_value = datetime.fromisoformat(field_value)
+        elif field_type == "ObjectId":
+            field_value = ObjectId(field_value)
+
+        # Update document in MongoDB
+        result = db[collection_name].update_one(
+            {"_id": ObjectId(document_id)},
+            {"$set": {field_name: field_value}}
+        )
+
+        if result.modified_count == 1:
+            return jsonify({"success": True, "message": "Field added successfully."}), 200
+        else:
+            return jsonify({"success": False, "error": "Field not added."}), 400
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/documents/<collection_name>/<document_id>', methods=['DELETE'])
+def delete_document(collection_name, document_id):
+    try:
+        result = db[collection_name].delete_one({"_id": ObjectId(document_id)})
+
+        if result.deleted_count == 1:
+            return jsonify({"success": True, "message": "Document deleted successfully."}), 200
+        else:
+            return jsonify({"success": False, "error": "Document not found."}), 404
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @ app.route('/api/collection/<collection_name>/<field_name>/<field_type>', methods=['POST'])
@@ -150,11 +186,6 @@ def update_document_field(collection_name, document_id, field_name):
     try:
         new_value = request.json.get('new_value')
         new_type = request.json.get('new_type')
-        print(collection_name)
-        print(document_id)
-        print(field_name)
-        print(new_value)
-        print(new_type)
         if new_type == "string":
             new_value = str(new_value)
         elif new_type == "int":
@@ -164,8 +195,8 @@ def update_document_field(collection_name, document_id, field_name):
         elif new_type == "boolean":
             new_value = bool(new_value)
         elif new_type == "date":
-            new_value =  datetime.fromisoformat(new_value.replace("Z", "+00:00"))
-            print(new_value)
+            new_value = datetime.fromisoformat(
+                new_value.replace("Z", "+00:00"))
         else:
             return jsonify({"error": "Unsupported field type"}), 400
 
@@ -179,13 +210,58 @@ def update_document_field(collection_name, document_id, field_name):
             return jsonify({"error": "Field not updated"}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+
 
 @ app.route('/', methods=['GET'])
 def get_index_page():
     return render_template(
         "index.html"
     )
+
+
+@ app.route('/authorization', methods=['GET'])
+def get_authorize_page():
+    return render_template(
+        "authorize.html"
+    )
+
+
+@app.route('/api/authorization/login', methods=['POST'])
+def login():
+    username = request.json.get('username')
+    password = request.json.get('password')
+    user = db["Keys"].find_one({"username": username, "password": password})
+    if user is None:
+        return jsonify({"message": "неправильне ім'я користувача або пароль"}), 400
+    return jsonify({"role": user["access_rights"]})
+
+
+@app.route('/api/authorization/register', methods=['POST'])
+def register_user():
+    # Get the data from the request
+    data = request.get_json()
+
+    # Extract username, password, and role from the request body
+    username = data.get('username')
+    password = data.get('password')
+    role = data.get('role')
+
+    # Check if all fields are provided
+    if not username or not password or not role:
+        return jsonify({"success": False, "message": "All fields are required"}), 400
+
+    # Check if the user already exists
+    users = db["Keys"].find()
+    existing_user = next(
+        (user for user in users if user['username'] == username), None)
+    if existing_user:
+        return jsonify({"success": False, "message": "Username already exists"}), 400
+
+    # Add the new user to the list
+    db["Keys"].insert_one(
+        {"username": username, "password": password, "role": role})
+
+    return jsonify({"success": True, "message": "User registered successfully"}), 201
 
 
 if __name__ == '__main__':
