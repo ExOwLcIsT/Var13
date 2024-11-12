@@ -228,7 +228,7 @@ def login():
     user = db["Keys"].find_one({"username": username, "password": password})
     if user is None:
         return jsonify({"message": "неправильне ім'я користувача або пароль"}), 400
-    return jsonify({"role": user["access_rights"]})
+    return jsonify({"role": user["role"]})
 
 
 @app.route('/api/authorization/register', methods=['POST'])
@@ -548,6 +548,12 @@ def get_request7_data():
 @app.route("/request8", methods=["GET"])
 def get_request8():
     return render_template("request8.html")
+
+
+@app.route("/api/request8", methods=["GET"])
+def get_request8_data():
+    hotels = list(db["готелі"].find({}, {"_id": 0}))
+    return jsonify(hotels)
 
 
 @app.route("/request9", methods=["GET"])

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <h1>Одержати список готелів, у яких здійснюється розселення туристів, вказавши при
+        цьому кількість зайнятих номерів і туристів, які проживали в них протягом
+        вказаного періоду.</h1>
+    <button onclick="make_request()">Обчислити</button>
+    <div id="result"></div>
+    <script>
+        function make_request() {
+            fetch("/api/request8").then(response => response.json()).then(data => {
+                const result = document.getElementById("result");
+                result.innerHTML = '';
+                data.forEach(key => {
+                    const h = document.createElement("h4");
+                    h.innerText = JSON.stringify(key);
+                    result.appendChild(h);
+                })
+            });
+        }
+    </script>
+</body>
+
+</html>

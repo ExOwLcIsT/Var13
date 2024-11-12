@@ -64,7 +64,6 @@ function fetchCollectionDetails(collectionName) {
     fetch(`${apiUrl}/collections/${collectionName}`)
         .then(response => response.json())
         .then(data => {
-            console.log(data)
             const documentCardsContainer = document.getElementById('document-cards');
             documentCardsContainer.innerHTML = '';
 
@@ -349,9 +348,6 @@ function updateField(collectionName, documentId, fieldName, newValue, newType) {
 }
 
 async function renameField(collectionName, documentId, oldFieldName) {
-    console.log(collectionName)
-    console.log(documentId)
-    console.log(oldFieldName)
     const newFieldName = prompt(`Enter new name for field "${oldFieldName}":`);
     if (!newFieldName || newFieldName === oldFieldName) return;
 
@@ -417,11 +413,11 @@ document.getElementById('add-document-form').onsubmit = function (event) {
 function hideElementsBasedOnRole() {
     const roles = ['owner', 'admin', 'operator', "user"];
     const index = roles.indexOf(getCookie("userRole"));
+    if (index === -1)
+        return;
     for (let i = index; i < roles.length; i++) {
-        console.log(i)
-        console.log(`.${roles[i]}-only`)
+        console.log(roles[i])
         const elements = document.querySelectorAll(`.${roles[i]}-only`);
-        console.log(elements)
         elements.forEach(element => {
             element.style.display = 'block';
         });

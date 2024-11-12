@@ -117,6 +117,7 @@ button {
 
 .owner-only,
 .admin-only,
-.operator-only {
+.operator-only,
+.user-only {
     display: none;
 }
