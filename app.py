@@ -91,29 +91,28 @@ def delete_field(collection_name, field_name, document_id):
     return jsonify({"message": "Поле успішно видалене"}), 200
 
 
-@app.route('/api/fields/<collection_name>/<document_id>', methods=['POST'])
-def add_field_to_document(collection_name, document_id):
+@app.route('/api/fields', methods=['POST'])
+def add_field_to_document():
     try:
         data = request.json
+        collection_name = data.get("collection_name")
         field_name = data.get("field_name")
         field_value = data.get("field_value")
         field_type = data.get("field_type")
-
-        # Convert field_value based on field_type
-        if field_type == "number (int)":
+        document_id = data.get("documentId")
+        print (data)
+        if field_type == "int":
             field_value = int(field_value)
-        elif field_type == "number (float)":
+        elif field_type == "float":
             field_value = float(field_value)
         elif field_type == "boolean":
             field_value = bool(field_value)
         elif field_type == "date":
-            # Assuming the date is in ISO format; adjust as necessary
             from datetime import datetime
             field_value = datetime.fromisoformat(field_value)
         elif field_type == "ObjectId":
             field_value = ObjectId(field_value)
 
-        # Update document in MongoDB
         result = db[collection_name].update_one(
             {"_id": ObjectId(document_id)},
             {"$set": {field_name: field_value}}
@@ -140,33 +139,6 @@ def delete_document(collection_name, document_id):
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
-
-
-@ app.route('/api/collection/<collection_name>/<field_name>/<field_type>', methods=['POST'])
-def add_field(collection_name, field_name, field_type):
-    if not field_type:
-        return jsonify({"error": "Необхідний тип поля"}), 400
-
-    if not field_name:
-        return jsonify({"error": "Необхідна назва поля"}), 400
-    default_value = ""
-    if field_type == "string":
-        default_value = ""
-    elif field_type == "int":
-        default_value = 0
-    elif field_type == "float":
-        default_value = 0.0
-    elif field_type == "boolean":
-        default_value = False
-    elif field_type == "date":
-        default_value = datetime.now()
-    elif field_type == 'objectId':
-        default_value = ''
-    else:
-        return jsonify({"error": "Невизначений тип поля"}), 400
-    db[collection_name].update_many({}, {"$set": {field_name: default_value}})
-    return jsonify({"message": "Поле успішно додане"}), 200
-
 
 @ app.route('/api/collection/<collection_name>', methods=['POST'])
 def add_document(collection_name):
@@ -233,26 +205,21 @@ def login():
 
 @app.route('/api/authorization/register', methods=['POST'])
 def register_user():
-    # Get the data from the request
     data = request.get_json()
 
-    # Extract username, password, and role from the request body
     username = data.get('username')
     password = data.get('password')
     role = data.get('role')
 
-    # Check if all fields are provided
     if not username or not password or not role:
         return jsonify({"success": False, "message": "All fields are required"}), 400
 
-    # Check if the user already exists
     users = db["Keys"].find()
     existing_user = next(
         (user for user in users if user['username'] == username), None)
     if existing_user:
         return jsonify({"success": False, "message": "Username already exists"}), 400
 
-    # Add the new user to the list
     db["Keys"].insert_one(
         {"username": username, "password": password, "role": role})
 

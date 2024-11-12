@@ -6,6 +6,9 @@ function getCookie(name) {
     if (parts.length === 2) return parts.pop().split(';').shift();
 }
 
+function deleteCookie(name) {
+    document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+}
 
 async function fetchCollections() {
     const response = await fetch('/api/collections');
@@ -31,6 +34,27 @@ async function fetchCollections() {
 
         collectionList.appendChild(li);
     });
+}
+
+async function createCollection() {
+    const collectionName = document.getElementById('new-collection-name').value.trim();
+    if (!collectionName) {
+        alert('Please enter a collection name.');
+        return;
+    }
+
+    const response = await fetch(`/api/collections/${collectionName}`, {
+        method: 'POST'
+    });
+
+    if (response.ok) {
+        alert(`Collection "${collectionName}" created successfully.`);
+        document.getElementById('new-collection-name').value = ''; // Clear input
+        fetchCollections(); // Refresh collection list
+    } else {
+        const errorData = await response.json();
+        alert(`Error: ${errorData.error}`);
+    }
 }
 
 async function deleteCollection(name) {
@@ -133,11 +157,11 @@ function showAddFieldInput(container, collectionName, documentId) {
 
     const fieldNameInput = document.createElement('input');
     fieldNameInput.placeholder = 'Field Name';
-    fieldNameInput.type = 'text';
+    fieldNameInput.type = 'string';
     container.appendChild(fieldNameInput);
 
     const fieldTypeSelect = document.createElement('select');
-    ['text', 'int', 'float', 'boolean', 'date', 'ObjectId'].forEach(type => {
+    ['string', 'int', 'float', 'boolean', 'date', 'ObjectId'].forEach(type => {
         const option = document.createElement('option');
         option.value = type;
         option.textContent = type;
@@ -161,7 +185,7 @@ function showAddFieldInput(container, collectionName, documentId) {
         } else if (selectedType === 'boolean') {
             fieldValueInput.type = 'checkbox';
         } else {
-            fieldValueInput.type = 'text';
+            fieldValueInput.type = 'string';
         }
     };
     fieldTypeSelect.onchange();
@@ -189,15 +213,17 @@ function showAddFieldInput(container, collectionName, documentId) {
 }
 
 function addFieldToDocument(collectionName, documentId, fieldName, fieldValue, fieldType) {
-    fetch(`${apiUrl}/fields/add/${collectionName}/${documentId}`, {
+    fetch(`${apiUrl}/fields`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                field_name: fieldName,
-                field_value: fieldValue,
-                field_type: fieldType
+                "collection_name": collectionName,
+                "documentId": documentId,
+                "field_name": fieldName,
+                "field_value": fieldValue,
+                "field_type": fieldType
             })
         })
         .then(response => response.json())
@@ -331,8 +357,8 @@ function updateField(collectionName, documentId, fieldName, newValue, newType) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                new_value: newValue,
-                new_type: newType
+                "new_value": newValue,
+                "new_type": newType
             })
         })
         .then(response => response.json())
@@ -368,7 +394,7 @@ async function renameField(collectionName, documentId, oldFieldName) {
 }
 
 async function deleteField(collectionName, documentId, fieldName) {
-    const approve = confirm("ви дійнсо хочете видалити це поле з документа?");
+    const approve = confirm("ви дійсно хочете видалити це поле з документа?");
     if (approve) {
         const response = await fetch(`${apiUrl}/fields/${collectionName}/${fieldName}/${documentId}`, {
             method: 'DELETE',
@@ -376,9 +402,9 @@ async function deleteField(collectionName, documentId, fieldName) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                collectionName: collectionName,
-                documentId: documentId,
-                fieldName: fieldName
+                "collectionName": collectionName,
+                "documentId": documentId,
+                "fieldName": fieldName
             })
         });
 
