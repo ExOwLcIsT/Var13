@@ -129,7 +129,7 @@ function fetchCollectionDetails(collectionName) {
                         fieldDiv.appendChild(editBtn);
 
                         const fieldContent = document.createElement('p');
-                        fieldContent.innerHTML = `<strong>${key}:</strong> ${value} <span class="field-type">Type: ${doc["fields"][key]}</span>`;
+                        fieldContent.innerHTML = `<strong>${key}:</strong> ${value} <br> <span class="field-type">Type: ${doc["fields"][key]}</span>`;
                         fieldDiv.appendChild(fieldContent);
                         card.appendChild(fieldDiv);
                     }
