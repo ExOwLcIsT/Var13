@@ -73,7 +73,7 @@ async function deleteCollection(name) {
 async function renameCollection(oldName) {
     const newName = prompt('Enter new collection name:');
     if (newName && newName !== oldName) {
-        const response = await fetch(`/api/collections/${oldName}/rename/${newName}`, {
+        const response = await fetch(`/api/collections/${oldName}/${newName}`, {
             method: 'PUT'
         });
         if (response.ok) {

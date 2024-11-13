@@ -59,6 +59,19 @@ def create_collection(name):
         return jsonify({'error': str(e)}), 500
 
 
+@ app.route('/api/collections/<old_name>/<new_name>', methods=['PUT'])
+def rename_collection(old_name, new_name):
+    try:
+
+        if not old_name or not new_name:
+            return jsonify({'error': 'Необхідна нова нзва колекції'}), 400
+
+        db[old_name].rename(new_name)
+        return jsonify({'message': f'Колекція "{old_name}" успішно перейменована на "{new_name}"'}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/fields/<collection_name>/<old_name>/<new_name>/<document_id>', methods=['PUT'])
 def rename_field(collection_name, old_name, new_name, document_id):
     try:
@@ -100,7 +113,7 @@ def add_field_to_document():
         field_value = data.get("field_value")
         field_type = data.get("field_type")
         document_id = data.get("documentId")
-        print (data)
+        print(data)
         if field_type == "int":
             field_value = int(field_value)
         elif field_type == "float":
@@ -139,6 +152,7 @@ def delete_document(collection_name, document_id):
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
 
 @ app.route('/api/collection/<collection_name>', methods=['POST'])
 def add_document(collection_name):
