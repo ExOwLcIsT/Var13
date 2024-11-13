@@ -8,6 +8,7 @@ function getCookie(name) {
 
 function deleteCookie(name) {
     document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    hideElementsBasedOnRole();
 }
 
 async function fetchCollections() {
@@ -438,11 +439,16 @@ document.getElementById('add-document-form').onsubmit = function (event) {
 
 function hideElementsBasedOnRole() {
     const roles = ['owner', 'admin', 'operator', "user"];
+    for (let i = 0; i < roles.length; i++) {
+        const elements = document.querySelectorAll(`.${roles[i]}-only`);
+        elements.forEach(element => {
+            element.style.display = 'none';
+        });
+    }
     const index = roles.indexOf(getCookie("userRole"));
     if (index === -1)
         return;
     for (let i = index; i < roles.length; i++) {
-        console.log(roles[i])
         const elements = document.querySelectorAll(`.${roles[i]}-only`);
         elements.forEach(element => {
             element.style.display = 'block';
