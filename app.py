@@ -15,6 +15,10 @@ def get_collections():
         collection = db[collection_name]
         document_count = collection.count_documents({})
         collections_info[collection_name] = document_count
+    if request.cookies.get("userRole") != "owner":
+        collections_info.pop("Keys")
+    if request.cookies.get("userRole") == "user":
+        collections_info.pop("туристи")
     return jsonify(collections_info)
 
 

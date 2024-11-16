@@ -25,11 +25,13 @@ async function fetchCollections() {
 
         const renameBtn = document.createElement('button');
         renameBtn.textContent = 'Rename';
+        renameBtn.classList.add("owner-only");
         renameBtn.onclick = () => renameCollection(name);
         li.appendChild(renameBtn);
 
         const deleteBtn = document.createElement('button');
         deleteBtn.textContent = 'Delete';
+        deleteBtn.classList.add("owner-only");
         deleteBtn.onclick = () => deleteCollection(name);
         li.appendChild(deleteBtn);
 

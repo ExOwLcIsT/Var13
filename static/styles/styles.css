@@ -52,6 +52,10 @@ section {
     border-radius: 5px;
 }
 
+.collection
+{
+    margin: 10px;
+}
 .collection:hover {
     cursor: pointer;
     width: fit-content;
@@ -173,6 +177,7 @@ textarea:focus {
 .card .card-buttons.remove-btn:hover {
     background-color: #e53935;
 }
+
 
 .owner-only,
 .admin-only,
